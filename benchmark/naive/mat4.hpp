@@ -1,28 +1,15 @@
 #pragma once
 
+#include <cstdint>
+
 namespace naive
 {
 
-class vec4f {
+class mat4f {
 public:
-  constexpr vec4f() = default;
-  constexpr vec4f(float a, float b, float c, float d)
-      : data{a, b, c, d} {}
-
-  constexpr auto operator*(const vec4f &other) -> vec4f {
-    return {data[0] * other.data[0], data[1] * other.data[1],
-            data[2] * other.data[2], data[3] * other.data[3]};
-  }
-
-private:
-  float data[4];
-};
-
-class matrix4x4f {
-public:
-  constexpr matrix4x4f() = default;
-  static constexpr auto identity() -> matrix4x4f {
-    matrix4x4f result{};
+  constexpr mat4f() = default;
+  static constexpr auto identity() -> mat4f {
+    mat4f result{};
     for (std::size_t i = 0; i < result.rows(); i++) {
       for (std::size_t j = 0; j < result.cols(); j++) {
         result.at(i, j) = (i == j) ? 1.0f : 0.0f;
@@ -41,8 +28,8 @@ public:
     return data[row][col];
   };
 
-  constexpr auto operator*(const matrix4x4f &other) -> matrix4x4f {
-    matrix4x4f result{};
+  constexpr auto operator*(const mat4f &other) -> mat4f {
+    mat4f result{};
     for (std::size_t i = 0; i < rows(); i++) {
       for (std::size_t j = 0; j < other.cols(); j++) {
         at(i, j) = 0;
