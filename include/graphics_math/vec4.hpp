@@ -13,7 +13,7 @@ namespace graphics_math {
 
 struct alignas(detail::simd_aligned) vec4f {
 public:
-  static constexpr auto zero() -> vec4f;
+  static constexpr auto identity() -> vec4f;
 
   constexpr vec4f() = default;
   constexpr ~vec4f() = default;
@@ -53,7 +53,9 @@ private:
 
 static_assert(sizeof(vec4f) == sizeof(float) * 4);
 
-constexpr auto vec4f::zero() -> vec4f { return vec4f(0.0f, 0.0f, 0.0f, 1.0f); }
+constexpr auto vec4f::identity() -> vec4f {
+  return vec4f(0.0f, 0.0f, 0.0f, 1.0f);
+}
 
 constexpr vec4f::vec4f(detail::fill_tag, float value)
     : _data{_mm_set1_ps(value)} {}
@@ -137,3 +139,19 @@ constexpr auto normalize(vec4f v) -> vec4f {
 }
 
 } // namespace graphics_math
+
+#include <format>
+
+namespace std {
+
+template <> struct formatter<graphics_math::vec4f> {
+  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+
+  constexpr auto format(const graphics_math::vec4f &v, format_context &ctx) const {
+    return format_to(ctx.out(), "[{} {} {} {}]", v[0], v[1], v[2], v[3]);
+  }
+};
+
+static_assert(requires (graphics_math::vec4f v) { std::format("{}", v); } );
+
+} // namespace std

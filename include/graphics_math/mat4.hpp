@@ -22,6 +22,9 @@ public:
 
   constexpr mat4f(vec4f r0, vec4f r1, vec4f r2, vec4f r3);
 
+  constexpr auto operator==(const mat4f &other) const -> bool;
+  constexpr auto operator!=(const mat4f &other) const -> bool;
+
   static constexpr auto identity() -> mat4f;
   constexpr auto rows() const -> std::size_t;
   constexpr auto cols() const -> std::size_t;
@@ -36,12 +39,23 @@ private:
   vec4f _data[4];
 };
 
+static_assert(sizeof(mat4f) == sizeof(float) * 16);
+
 constexpr mat4f::mat4f(vec4f r0, vec4f r1, vec4f r2, vec4f r3)
     : _data{r0, r1, r2, r3} {}
 
 constexpr auto mat4f::identity() -> mat4f {
   return mat4f(vec4f(1.0f, 0.0f, 0.0f, 0.0f), vec4f(0.0f, 1.0f, 0.0f, 0.0f),
                vec4f(0.0f, 0.0f, 1.0f, 0.0f), vec4f(0.0f, 0.0f, 0.0f, 1.0f));
+}
+
+constexpr auto mat4f::operator==(const mat4f &other) const -> bool {
+  return _data[0] == other._data[0] && _data[1] == other._data[1] &&
+         _data[2] == other._data[2] && _data[3] == other._data[3];
+}
+
+constexpr auto mat4f::operator!=(const mat4f &other) const -> bool {
+  return !(*this == other);
 }
 
 constexpr auto mat4f::rows() const -> std::size_t { return 4; };
@@ -78,3 +92,19 @@ constexpr auto mat4f::operator*(const mat4f &other) -> mat4f {
 }
 
 } // namespace graphics_math
+
+#include <format>
+
+namespace std {
+
+template <> struct formatter<graphics_math::mat4f> {
+  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+
+  constexpr auto format(const graphics_math::mat4f &m, format_context &ctx) const {
+    return format_to(ctx.out(), "[{} {} {} {}]", m[0], m[1], m[2], m[3]);
+  }
+};
+
+static_assert(requires (graphics_math::mat4f m) { std::format("{}", m); } );
+
+} // namespace std
