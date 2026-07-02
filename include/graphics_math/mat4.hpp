@@ -22,10 +22,16 @@ public:
 
   constexpr mat4f(vec4f r0, vec4f r1, vec4f r2, vec4f r3);
 
+  constexpr mat4f(float v00, float v10, float v20, float v30, //
+                  float v01, float v11, float v21, float v31, //
+                  float v02, float v12, float v22, float v32, //
+                  float v03, float v13, float v23, float v33);
+
+  static constexpr auto identity() -> mat4f;
+
   constexpr auto operator==(const mat4f &other) const -> bool;
   constexpr auto operator!=(const mat4f &other) const -> bool;
 
-  static constexpr auto identity() -> mat4f;
   constexpr auto rows() const -> std::size_t;
   constexpr auto cols() const -> std::size_t;
 
@@ -33,25 +39,39 @@ public:
 
   constexpr auto set(std::size_t row, std::size_t col, float value) -> void;
 
-  constexpr auto operator*(const mat4f &other) -> mat4f;
+  constexpr auto get(std::size_t row, std::size_t col) const -> float;
+
+  constexpr auto operator*(const mat4f &other) const -> mat4f;
+  constexpr auto operator*(vec4f v) const -> vec4f;
 
 private:
   vec4f _data[4];
 };
 
-static_assert(sizeof(mat4f) == sizeof(float) * 16);
-
 constexpr mat4f::mat4f(vec4f r0, vec4f r1, vec4f r2, vec4f r3)
     : _data{r0, r1, r2, r3} {}
 
+constexpr mat4f::mat4f(float v00, float v10, float v20, float v30, //
+                       float v01, float v11, float v21, float v31, //
+                       float v02, float v12, float v22, float v32, //
+                       float v03, float v13, float v23, float v33)
+    : mat4f(vec4f(v00, v10, v20, v30), //
+            vec4f(v01, v11, v21, v31), //
+            vec4f(v02, v12, v22, v32), //
+            vec4f(v03, v13, v23, v33)) {}
+
 constexpr auto mat4f::identity() -> mat4f {
-  return mat4f(vec4f(1.0f, 0.0f, 0.0f, 0.0f), vec4f(0.0f, 1.0f, 0.0f, 0.0f),
-               vec4f(0.0f, 0.0f, 1.0f, 0.0f), vec4f(0.0f, 0.0f, 0.0f, 1.0f));
+  return mat4f(vec4f(1.0f, 0.0f, 0.0f, 0.0f), //
+               vec4f(0.0f, 1.0f, 0.0f, 0.0f), //
+               vec4f(0.0f, 0.0f, 1.0f, 0.0f), //
+               vec4f(0.0f, 0.0f, 0.0f, 1.0f));
 }
 
 constexpr auto mat4f::operator==(const mat4f &other) const -> bool {
-  return _data[0] == other._data[0] && _data[1] == other._data[1] &&
-         _data[2] == other._data[2] && _data[3] == other._data[3];
+  return _data[0] == other._data[0]    //
+         && _data[1] == other._data[1] //
+         && _data[2] == other._data[2] //
+         && _data[3] == other._data[3];
 }
 
 constexpr auto mat4f::operator!=(const mat4f &other) const -> bool {
@@ -59,6 +79,7 @@ constexpr auto mat4f::operator!=(const mat4f &other) const -> bool {
 }
 
 constexpr auto mat4f::rows() const -> std::size_t { return 4; };
+
 constexpr auto mat4f::cols() const -> std::size_t { return 4; };
 
 constexpr auto mat4f::operator[](std::size_t row) const -> const vec4f & {
@@ -68,6 +89,10 @@ constexpr auto mat4f::operator[](std::size_t row) const -> const vec4f & {
 constexpr auto mat4f::set(std::size_t row, std::size_t col, float value)
     -> void {
   _data[row].set(col, value);
+}
+
+constexpr auto mat4f::get(std::size_t row, std::size_t col) const -> float {
+  return _data[row][col];
 }
 
 // linear combination:
@@ -84,11 +109,46 @@ auto lincomb(vec4f v, const mat4f &B) -> vec4f {
   return vec4f(result);
 }
 
-constexpr auto mat4f::operator*(const mat4f &other) -> mat4f {
-  //  out_ij = sum_k a_ik b_kj
-  //  => out_0j = a_00 * b_0j + a_01 * b_1j + a_02 * b_2j + a_03 * b_3j
-  return mat4f(lincomb(_data[0], other), lincomb(_data[1], other),
-               lincomb(_data[2], other), lincomb(_data[3], other));
+constexpr auto mat4f::operator*(const mat4f &other) const -> mat4f {
+  return mat4f(lincomb(_data[0], other), //
+               lincomb(_data[1], other), //
+               lincomb(_data[2], other), //
+               lincomb(_data[3], other));
+}
+
+inline auto horizontal_sum(vec4f v) -> float {
+  return v[0] + v[1] + v[2] + v[3];
+}
+
+constexpr auto mat4f::operator*(vec4f v) const -> vec4f {
+  return vec4f(horizontal_sum(_data[0] * v), //
+               horizontal_sum(_data[1] * v), //
+               horizontal_sum(_data[2] * v), //
+               horizontal_sum(_data[3] * v));
+}
+
+constexpr auto transpose(const mat4f &m) -> mat4f {
+  mat4f out;
+  for (std::size_t i = 0; i < m.rows(); i++) {
+    for (std::size_t j = 0; j < m.rows(); j++) {
+      out.set(j, i, m[i][j]);
+    }
+  }
+
+  return out;
+}
+
+constexpr auto perspective_projection(float fov_y, float aspect, float near_z,
+                                      float far_z) -> mat4f {
+  // https://johannesugb.github.io/gpu-programming/setting-up-a-proper-vulkan-projection-matrix/
+  float const v00 = aspect / std::tan(fov_y / 2);
+  float const v11 = 1 / std::tan(fov_y / 2);
+  float const v22 = far_z / (far_z - near_z);
+  float const v23 = -((near_z * far_z) / (far_z - near_z));
+  return mat4f(vec4f(v00, 0, 0, 0),   //
+               vec4f(0, v11, 0, 0),   //
+               vec4f(0, 0, v22, v23), //
+               vec4f(0, 0, 1, 0));
 }
 
 } // namespace graphics_math
@@ -100,11 +160,16 @@ namespace std {
 template <> struct formatter<graphics_math::mat4f> {
   constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 
-  constexpr auto format(const graphics_math::mat4f &m, format_context &ctx) const {
+  constexpr auto format(const graphics_math::mat4f &m,
+                        format_context &ctx) const {
     return format_to(ctx.out(), "[{} {} {} {}]", m[0], m[1], m[2], m[3]);
   }
 };
 
-static_assert(requires (graphics_math::mat4f m) { std::format("{}", m); } );
-
 } // namespace std
+
+static_assert(sizeof(graphics_math::mat4f) == sizeof(float) * 16);
+
+static_assert(requires(const graphics_math::mat4f &m) {
+  std::format("{}", m);
+});

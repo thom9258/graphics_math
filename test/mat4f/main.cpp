@@ -2,18 +2,23 @@
 
 #include "../../include/graphics_math/mat4.hpp"
 
+#include <glm/glm.hpp>
+
+#include <print>
+
 using namespace graphics_math;
 
 namespace testing::internal {
-template <>
-class UniversalPrinter<mat4f> {
+template <> class UniversalPrinter<mat4f> {
 public:
-    static void Print(const mat4f& m, ::std::ostream* os) {
-        *os << std::format("{}", m);
-    }
+  static void Print(const mat4f &m, ::std::ostream *os) {
+    *os << std::format("{}", m);
+  }
 };
 
-}TEST(mat4f, construction) {
+} // namespace testing::internal
+
+TEST(mat4f, construction) {
   mat4f m(vec4f(1.0f, 2.0f, 3.0f, 4.0f), vec4f(5.0f, 6.0f, 7.0f, 8.0f),
           vec4f(9.0f, 10.0f, 11.0f, 12.0f), vec4f(13.0f, 14.0f, 15.0f, 16.0f));
 
@@ -21,6 +26,16 @@ public:
   EXPECT_EQ(m[1], vec4f(5.0f, 6.0f, 7.0f, 8.0f));
   EXPECT_EQ(m[2], vec4f(9.0f, 10.0f, 11.0f, 12.0f));
   EXPECT_EQ(m[3], vec4f(13.0f, 14.0f, 15.0f, 16.0f));
+}
+
+TEST(mat4f, construction_results_in_same_mat) {
+  mat4f a(vec4f(1.0f, 2.0f, 3.0f, 4.0f), vec4f(5.0f, 6.0f, 7.0f, 8.0f),
+          vec4f(9.0f, 10.0f, 11.0f, 12.0f), vec4f(13.0f, 14.0f, 15.0f, 16.0f));
+
+  mat4f b(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f,
+          12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+
+  EXPECT_EQ(a, b);
 }
 
 TEST(mat4f, compare) {
@@ -54,6 +69,30 @@ TEST(mat4f, multiplication) {
             vec4f(80.9352f, 80.2072f, 76.6169f, 64.8145f));
 
   EXPECT_EQ(a * b, res);
+}
+
+TEST(mat4f, transpose) {
+  auto const identity = mat4f::identity();
+  EXPECT_EQ(transpose(identity), identity);
+
+  vec4f const zeroes = vec4f(0, 0, 0, 0);
+  mat4f a(vec4f(1, 2, 3, 4), zeroes, zeroes, zeroes);
+  mat4f ta = transpose(a);
+  EXPECT_EQ(ta, mat4f(vec4f(1, 0, 0, 0), vec4f(2, 0, 0, 0), vec4f(3, 0, 0, 0),
+                      vec4f(4, 0, 0, 0)));
+}
+
+TEST(mat4f, mat4_vec4_multiply) {
+  auto const identity = mat4f::identity();
+
+  vec4f v(1.0f, 2.0f, 3.0f, 4.0f);
+
+  mat4f res(vec4f(1.0f, 0.0f, 0.0f, 0.0f), //
+            vec4f(0.0f, 2.0f, 0.0f, 0.0f),
+            vec4f(0.0f, 0.0f, 3.0f, 0.0f),
+            vec4f(0.0f, 0.0f, 0.0f, 4.0f));
+
+  EXPECT_EQ(identity * v, v);
 }
 
 int main(int argc, char **argv) {

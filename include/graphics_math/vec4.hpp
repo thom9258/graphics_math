@@ -51,8 +51,6 @@ private:
   __m128 _data;
 };
 
-static_assert(sizeof(vec4f) == sizeof(float) * 4);
-
 constexpr auto vec4f::identity() -> vec4f {
   return vec4f(0.0f, 0.0f, 0.0f, 1.0f);
 }
@@ -138,6 +136,10 @@ constexpr auto normalize(vec4f v) -> vec4f {
   return v / w;
 }
 
+constexpr auto dot_product(vec4f a, vec4f b) -> float {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+}
+
 } // namespace graphics_math
 
 #include <format>
@@ -147,11 +149,16 @@ namespace std {
 template <> struct formatter<graphics_math::vec4f> {
   constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 
-  constexpr auto format(const graphics_math::vec4f &v, format_context &ctx) const {
+  constexpr auto format(const graphics_math::vec4f &v,
+                        format_context &ctx) const {
     return format_to(ctx.out(), "[{} {} {} {}]", v[0], v[1], v[2], v[3]);
   }
 };
 
-static_assert(requires (graphics_math::vec4f v) { std::format("{}", v); } );
-
 } // namespace std
+
+static_assert(sizeof(graphics_math::vec4f) == sizeof(float) * 4);
+
+static_assert(requires(const graphics_math::vec4f &v) {
+  std::format("{}", v);
+});
